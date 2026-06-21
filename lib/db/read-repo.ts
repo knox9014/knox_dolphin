@@ -54,3 +54,23 @@ export function listDecisions(projectId: number): StoredDecision[] {
     )
     .all(projectId) as StoredDecision[];
 }
+
+export interface AnyCandidate {
+  id: number;
+  decision: string;
+  reason: string | null;
+  source_quote: string;
+  speaker: string | null;
+  reviewed: number;
+  extracted_at: string;
+}
+
+/** Every candidate, any review state — the full extraction log. */
+export function listAllCandidates(projectId: number): AnyCandidate[] {
+  return getDb()
+    .prepare(
+      `SELECT id, decision, reason, source_quote, speaker, reviewed, extracted_at
+         FROM candidates WHERE project_id = ? ORDER BY id DESC`
+    )
+    .all(projectId) as AnyCandidate[];
+}

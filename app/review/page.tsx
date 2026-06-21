@@ -14,6 +14,8 @@ export default function ReviewPage() {
     <main style={{ maxWidth: 760 }}>
       <nav style={{ marginBottom: 24, display: "flex", gap: 16, fontSize: 14 }}>
         <Link href="/" style={{ color: "#58a6ff" }}>홈</Link>
+        <Link href="/decisions" style={{ color: "#58a6ff" }}>결정</Link>
+        <Link href="/candidates" style={{ color: "#58a6ff" }}>전체 후보</Link>
         <Link href="/search" style={{ color: "#58a6ff" }}>검색</Link>
       </nav>
 

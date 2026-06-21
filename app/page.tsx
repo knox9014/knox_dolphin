@@ -37,8 +37,10 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div style={{ marginTop: "2rem", display: "flex", gap: 12 }}>
+      <div style={{ marginTop: "2rem", display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Link href="/review" style={navCard}>검토 큐 →<br /><span style={navSub}>후보 승인/거부</span></Link>
+        <Link href="/decisions" style={navCard}>결정 →<br /><span style={navSub}>확정된 기억</span></Link>
+        <Link href="/candidates" style={navCard}>전체 후보 →<br /><span style={navSub}>추출 로그</span></Link>
         <Link href="/search" style={navCard}>검색 →<br /><span style={navSub}>왜 그렇게 했지?</span></Link>
       </div>
     </main>
