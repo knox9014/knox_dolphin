@@ -60,6 +60,10 @@ export const heuristicProvider: DecisionProvider = {
       // Korean is information-dense, so a low char floor still filters fragments;
       // the signal-vocabulary check below is the real precision lever.
       if (text.length < 15 || text.length > 2000) continue;
+      // A crisp decision is a sentence or two. Long multi-line messages are task
+      // briefs / instructions, not durable decisions — even if they happen to
+      // contain a signal word. Cap the line count to filter that false-positive class.
+      if ((text.match(/\n/g)?.length ?? 0) > 3) continue;
       if (NOISE_PREFIXES.some((p) => text.trimStart().startsWith(p))) continue;
       if (isQuestion(text)) continue;
       if (isCodeHeavy(text)) continue;
