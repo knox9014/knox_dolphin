@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { parseLog } from "@/lib/claude-code-logs/parse";
 import { extract } from "@/core/extractor/extract";
 import { heuristicProvider } from "@/core/extractor/heuristic-provider";
+import { anthropicProvider } from "@/core/extractor/anthropic-provider";
+import { getAnthropicKey } from "@/lib/settings";
 import { saveCandidates } from "@/lib/db/candidates-repo";
 import { getActiveProjectId } from "@/lib/active-project";
 import { listLogFiles as discover } from "@/lib/claude-code-logs/list";
@@ -20,7 +22,10 @@ export async function POST(req: Request) {
   if (!allowed) return NextResponse.json({ error: "unknown log path" }, { status: 403 });
 
   const log = parseLog(path);
-  const { kept, discarded } = await extract(log, heuristicProvider);
+  // Real LLM extraction when a key is configured; otherwise the key-free heuristic.
+  const apiKey = getAnthropicKey();
+  const provider = apiKey ? anthropicProvider(apiKey) : heuristicProvider;
+  const { kept, discarded } = await extract(log, provider);
 
   const projectId = await getActiveProjectId();
   const saved = saveCandidates(projectId, log.sessionId, kept);

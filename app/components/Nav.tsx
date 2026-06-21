@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/decisions", label: "결정" },
   { href: "/candidates", label: "전체 후보" },
   { href: "/search", label: "검색" },
+  { href: "/settings", label: "설정" },
 ];
 
 // Shared top navigation. `active` highlights the current page.

@@ -4,6 +4,7 @@ import { keywordRetriever } from "@/core/recall/keyword-retriever";
 import { mockAnswerer } from "@/core/recall/mock-answerer";
 import { anthropicAnswerer } from "@/core/recall/anthropic-answerer";
 import { getActiveProjectId } from "@/lib/active-project";
+import { getAnthropicKey } from "@/lib/settings";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
 
   // Real LLM if a key is configured; otherwise fall back to the mock so the app
   // still works key-free. The key is read server-side only, never sent to the browser.
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = getAnthropicKey();
   const answerer = apiKey ? anthropicAnswerer(apiKey) : mockAnswerer;
 
   const projectId = await getActiveProjectId();
