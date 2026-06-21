@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { Nav } from "../components/Nav";
 
 interface RecallResponse {
   answer: string;
@@ -15,8 +15,8 @@ interface RecallResponse {
   }[];
 }
 
-// Recall UI. Ask "why did we…" and get an answer grounded ONLY in stored decisions,
-// or an honest "기록 없음".
+// Recall UI. Ask "why did we…" and get an answer grounded ONLY in stored
+// decisions, or an honest "기록 없음".
 export default function SearchPage() {
   const [q, setQ] = useState("");
   const [res, setRes] = useState<RecallResponse | null>(null);
@@ -37,68 +37,49 @@ export default function SearchPage() {
   }
 
   return (
-    <main style={{ maxWidth: 760 }}>
-      <nav style={{ marginBottom: 24, display: "flex", gap: 16, fontSize: 14 }}>
-        <Link href="/" style={{ color: "#58a6ff" }}>홈</Link>
-        <Link href="/review" style={{ color: "#58a6ff" }}>검토 큐</Link>
-      </nav>
-
+    <main>
+      <Nav active="/search" />
       <h1>왜 그렇게 했지?</h1>
-      <p style={{ color: "#7d8590", marginTop: 0 }}>
+      <p className="lead">
         저장된 결정에서만 답합니다. 관련 기록이 없으면 솔직히 &ldquo;기록 없음&rdquo;이라고 말합니다.
       </p>
 
-      <form onSubmit={ask} style={{ display: "flex", gap: 8, marginTop: 16 }}>
+      <form onSubmit={ask} style={{ display: "flex", gap: 8 }}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="예: 왜 SQLite를 썼어?"
-          style={{ flex: 1, padding: "8px 12px", borderRadius: 6, border: "1px solid #30363d",
-                   background: "#0d1117", color: "#e6edf3" }}
+          style={{ flex: 1 }}
         />
-        <button disabled={busy} style={{ background: "#1f6feb", color: "white", border: "none",
-                 borderRadius: 6, padding: "8px 16px", cursor: "pointer" }}>
-          {busy ? "…" : "질문"}
-        </button>
+        <button disabled={busy} className="btn btn-blue">{busy ? "…" : "질문"}</button>
       </form>
 
       {res && (
-        <div style={{ marginTop: 24, padding: "14px 16px", borderRadius: 8,
-                      border: `1px solid ${res.grounded ? "#2ea04340" : "#d2992240"}`,
-                      background: res.grounded ? "#0d1117" : "#1c1708" }}>
+        <div className={`panel ${res.grounded ? "panel-ok" : "panel-warn"}`} style={{ marginTop: "1.5rem" }}>
           {res.grounded ? (
             <>
               <strong>근거 있는 답변</strong>
               <pre style={{ whiteSpace: "pre-wrap", margin: "8px 0 0", fontFamily: "inherit" }}>{res.answer}</pre>
-              <div style={{ marginTop: 14, borderTop: "1px solid #21262d", paddingTop: 10 }}>
-                <span style={{ fontSize: 12, color: "#7d8590" }}>근거 레코드</span>
+              <div style={{ marginTop: 14, borderTop: "1px solid var(--border-soft)", paddingTop: 10 }}>
+                <span className="faint">근거 레코드</span>
                 {res.records.map((r) => (
                   <div key={r.id} style={{ marginTop: 6, fontSize: 13 }}>
-                    <span style={badge(r.status)}>{r.status === "superseded" ? "대체됨" : "확정"}</span>{" "}
+                    <span className={`badge ${r.status === "superseded" ? "badge-amber" : "badge-green"}`}>
+                      {r.status === "superseded" ? "대체됨" : "확정"}
+                    </span>{" "}
                     <strong>#{r.id}</strong> {r.decision}
                     {r.status === "superseded" && r.superseded_by != null && (
-                      <span style={{ color: "#d29922" }}> → #{r.superseded_by}</span>
+                      <span style={{ color: "var(--amber)" }}> → #{r.superseded_by}</span>
                     )}
                   </div>
                 ))}
               </div>
             </>
           ) : (
-            <strong style={{ color: "#d29922" }}>기록 없음 — 모델을 호출하지 않았습니다.</strong>
+            <strong style={{ color: "var(--amber)" }}>기록 없음 — 모델을 호출하지 않았습니다.</strong>
           )}
         </div>
       )}
     </main>
   );
-}
-
-function badge(status: string): React.CSSProperties {
-  const superseded = status === "superseded";
-  return {
-    fontSize: 11,
-    padding: "1px 7px",
-    borderRadius: 10,
-    background: superseded ? "#d2992226" : "#2ea04326",
-    color: superseded ? "#d29922" : "#3fb950",
-  };
 }

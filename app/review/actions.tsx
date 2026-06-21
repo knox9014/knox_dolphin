@@ -28,14 +28,14 @@ export function CandidateActions({ candidateId }: { candidateId: number }) {
   }
 
   return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
-      <button onClick={() => act("confirm")} disabled={busy} style={btn("#2ea043")}>
+    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10 }}>
+      <button onClick={() => act("confirm")} disabled={busy} className="btn btn-green">
         승인 → 결정으로
       </button>
-      <button onClick={() => act("reject")} disabled={busy} style={btn("#6e7681")}>
+      <button onClick={() => act("reject")} disabled={busy} className="btn btn-gray">
         거부
       </button>
-      {err && <span style={{ color: "#f85149", fontSize: 13 }}>{err}</span>}
+      {err && <span style={{ color: "var(--red)", fontSize: 13 }}>{err}</span>}
     </div>
   );
 }
@@ -50,20 +50,8 @@ export function SeedButton() {
     setBusy(false);
   }
   return (
-    <button onClick={seed} disabled={busy} style={btn("#1f6feb")}>
+    <button onClick={seed} disabled={busy} className="btn btn-blue">
       {busy ? "추가 중…" : "데모 후보 추가 (목 추출)"}
     </button>
   );
-}
-
-function btn(bg: string): React.CSSProperties {
-  return {
-    background: bg,
-    color: "white",
-    border: "none",
-    borderRadius: 6,
-    padding: "6px 12px",
-    cursor: "pointer",
-    fontSize: 13,
-  };
 }
