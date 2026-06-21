@@ -32,21 +32,37 @@ export default function LogsPage() {
   const [busyPath, setBusyPath] = useState<string | null>(null);
   const [result, setResult] = useState<(ExtractResult & { file: string }) | null>(null);
   const [filter, setFilter] = useState("");
+  const [activeName, setActiveName] = useState<string | null>(null);
+  const [onlyMine, setOnlyMine] = useState(false);
 
   useEffect(() => {
     fetch("/api/logs")
       .then((r) => r.json())
       .then((d) => setLogs(d.logs ?? []))
       .finally(() => setLoading(false));
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((d) => {
+        const active = (d.projects ?? []).find((p: { id: number }) => p.id === d.activeId);
+        setActiveName(active?.name ?? null);
+      });
   }, []);
+
+  // A log "belongs to" the active project when its working folder name matches
+  // the project name. Heuristic highlight, not enforced.
+  const belongs = (l: LogInfo) => !!activeName && l.cwdName === activeName;
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return logs;
-    return logs.filter((l) =>
-      [l.title, l.cwdName, l.preview, l.file].some((s) => s?.toLowerCase().includes(q))
-    );
-  }, [logs, filter]);
+    let list = logs;
+    if (q) list = list.filter((l) => [l.title, l.cwdName, l.preview, l.file].some((s) => s?.toLowerCase().includes(q)));
+    if (onlyMine) list = list.filter(belongs);
+    // matching logs first, otherwise keep newest-first order
+    return [...list].sort((a, b) => Number(belongs(b)) - Number(belongs(a)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logs, filter, onlyMine, activeName]);
+
+  const mineCount = useMemo(() => logs.filter(belongs).length, [logs, activeName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function extract(log: LogInfo) {
     setBusyPath(log.path);
@@ -70,6 +86,13 @@ export default function LogsPage() {
         원문은 저장하지 않습니다.
       </p>
 
+      {activeName && (
+        <div className="panel" style={{ marginBottom: 14, fontSize: 14 }}>
+          추출 대상 프로젝트: <strong>📁 {activeName}</strong>
+          <span className="faint"> — 추출한 후보는 이 프로젝트로 들어갑니다. (상단에서 변경)</span>
+        </div>
+      )}
+
       {result && (
         <div className="panel panel-ok" style={{ marginBottom: "1.25rem" }}>
           <strong>{result.title ?? result.file}</strong> 추출 완료 — 메시지 {result.messages}개 중 후보 {result.saved}개 저장
@@ -79,12 +102,20 @@ export default function LogsPage() {
       )}
 
       {!loading && logs.length > 0 && (
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="제목·폴더·내용으로 검색…"
-          style={{ width: "100%", marginBottom: 14 }}
-        />
+        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="제목·폴더·내용으로 검색…"
+            style={{ flex: 1, minWidth: 200 }}
+          />
+          {mineCount > 0 && (
+            <label className="faint" style={{ display: "flex", gap: 6, alignItems: "center", cursor: "pointer", whiteSpace: "nowrap" }}>
+              <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} style={{ width: "auto" }} />
+              현재 프로젝트 로그만 ({mineCount})
+            </label>
+          )}
+        </div>
       )}
 
       {loading ? (
@@ -94,7 +125,7 @@ export default function LogsPage() {
       ) : (
         <ul className="list">
           {shown.map((l) => (
-            <li key={l.path} className="card">
+            <li key={l.path} className="card" style={belongs(l) ? { borderColor: "#2ea04366" } : undefined}>
               <div className="card-row">
                 <span className="card-title">{l.title ?? "(제목 없는 세션)"}</span>
                 <button onClick={() => extract(l)} disabled={busyPath !== null} className="btn btn-blue">
@@ -102,6 +133,7 @@ export default function LogsPage() {
                 </button>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
+                {belongs(l) && <span className="badge badge-green">현재 프로젝트</span>}
                 {l.cwdName && <span className="badge badge-gray" title={l.cwd ?? undefined}>📁 {l.cwdName}</span>}
                 <span className="faint">💬 개발자 {l.developerMsgs} · AI {l.assistantMsgs}</span>
                 <span className="faint">· {new Date(l.modified).toLocaleString()}</span>
