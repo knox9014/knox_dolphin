@@ -35,14 +35,17 @@ function loadCandidate(id: number): CandidateRow {
 
 /**
  * Promote a candidate into the `decisions` sanctuary.
- * @param conversationText the original log text the quote must still be found in.
+ * @param conversationText OPTIONAL original log text. When present (e.g. promoting
+ *   right after extraction) the quote is re-validated against it. When absent (the
+ *   normal UI case — transcripts aren't stored, invariant #5) we rely on the guard
+ *   that already ran at candidate insert time plus the DB's source_quote NOT NULL.
  */
-export function confirmCandidate(candidateId: number, conversationText: string): PromoteResult {
+export function confirmCandidate(candidateId: number, conversationText?: string): PromoteResult {
   const c = loadCandidate(candidateId);
 
   if (c.reviewed === 1) throw new Error(`candidate ${candidateId} already reviewed`);
   if (!c.source_quote?.trim()) throw new Error("candidate has no source_quote — cannot promote");
-  if (!isVerbatimQuote(c.source_quote, conversationText)) {
+  if (conversationText !== undefined && !isVerbatimQuote(c.source_quote, conversationText)) {
     throw new Error("source_quote no longer verifiable against the conversation — refusing to promote");
   }
 

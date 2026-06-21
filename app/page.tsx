@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ping } from "@/lib/db/ping";
 import { getDbPath } from "@/lib/db/connection";
 
@@ -35,6 +36,22 @@ export default function HomePage() {
           DB 파일: {getDbPath()}
         </p>
       </div>
+
+      <div style={{ marginTop: "2rem", display: "flex", gap: 12 }}>
+        <Link href="/review" style={navCard}>검토 큐 →<br /><span style={navSub}>후보 승인/거부</span></Link>
+        <Link href="/search" style={navCard}>검색 →<br /><span style={navSub}>왜 그렇게 했지?</span></Link>
+      </div>
     </main>
   );
 }
+
+const navCard: React.CSSProperties = {
+  flex: 1,
+  padding: "14px 16px",
+  borderRadius: 8,
+  border: "1px solid #30363d",
+  color: "#e6edf3",
+  textDecoration: "none",
+  background: "#0d1117",
+};
+const navSub: React.CSSProperties = { color: "#7d8590", fontSize: "0.8rem" };
