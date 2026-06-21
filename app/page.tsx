@@ -38,6 +38,7 @@ export default function HomePage() {
       </div>
 
       <div style={{ marginTop: "2rem", display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Link href="/logs" style={navCard}>내 로그 →<br /><span style={navSub}>실제 로그에서 추출</span></Link>
         <Link href="/review" style={navCard}>검토 큐 →<br /><span style={navSub}>후보 승인/거부</span></Link>
         <Link href="/decisions" style={navCard}>결정 →<br /><span style={navSub}>확정된 기억</span></Link>
         <Link href="/candidates" style={navCard}>전체 후보 →<br /><span style={navSub}>추출 로그</span></Link>
