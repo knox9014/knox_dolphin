@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { listProjects, listDecisions } from "../lib/db/read-repo.ts";
 import { keywordRetriever } from "../core/recall/keyword-retriever.ts";
+import { isVerbatimQuote } from "../core/trust/source-quote.ts";
+import { saveCandidates } from "../lib/db/candidates-repo.ts";
 
 // Knox_Dolphin MCP server — exposes a project's CONFIRMED decisions to Claude as
 // tools. It returns only stored records (with source quotes); it never invents.
@@ -84,6 +86,53 @@ server.registerTool(
     const pid = resolveProjectId(project);
     if (pid === null) return text({ error: `project not resolved (pass project, or set KNOX_PROJECT): ${project ?? ""}` });
     return text({ decisions: listDecisions(pid) });
+  }
+);
+
+server.registerTool(
+  "knox_propose_decision",
+  {
+    title: "Propose a decision (to the review queue)",
+    description:
+      "Capture a decision made during this conversation. It does NOT become a stored " +
+      "decision — it goes to the human review queue (candidates) for approval. You MUST " +
+      "supply `source_quote` (the exact words from the conversation that state the " +
+      "decision) and `conversation_excerpt` (the surrounding text it came from). The " +
+      "server verifies the quote is a verbatim substring of the excerpt and rejects it " +
+      "otherwise. Do not invent reasoning: leave reason/alternatives/etc. null if not " +
+      "explicitly stated.",
+    inputSchema: {
+      project: z.string().optional().describe("Project name or id (defaults to KNOX_PROJECT env)"),
+      decision: z.string().describe("Short statement of the decision"),
+      source_quote: z.string().describe("Exact verbatim words from the conversation"),
+      conversation_excerpt: z.string().describe("The surrounding conversation text the quote came from"),
+      reason: z.string().nullable().optional(),
+      alternatives: z.string().nullable().optional(),
+      rejected_because: z.string().nullable().optional(),
+      impact: z.string().nullable().optional(),
+      speaker: z.enum(["developer", "assistant"]).optional(),
+    },
+  },
+  async ({ project, decision, source_quote, conversation_excerpt, reason, alternatives, rejected_because, impact, speaker }) => {
+    const pid = resolveProjectId(project);
+    if (pid === null) return text({ error: `project not resolved (pass project, or set KNOX_PROJECT): ${project ?? ""}` });
+    if (!decision?.trim()) return text({ error: "decision is required" });
+    // Trust guard: the quote must actually appear in the evidence Claude provided.
+    if (!isVerbatimQuote(source_quote, conversation_excerpt)) {
+      return text({ rejected: true, reason: "source_quote is not a verbatim substring of conversation_excerpt" });
+    }
+    const saved = saveCandidates(pid, null, [
+      {
+        decision: decision.trim(),
+        reason: reason ?? null,
+        alternatives: alternatives ?? null,
+        rejected_because: rejected_because ?? null,
+        impact: impact ?? null,
+        source_quote: source_quote.trim(),
+        speaker: speaker ?? "developer",
+      },
+    ]);
+    return text({ ok: true, queued: saved, note: "added to the review queue; a human must approve it before it becomes a stored decision" });
   }
 );
 
