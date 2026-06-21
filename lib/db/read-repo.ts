@@ -20,6 +20,7 @@ export interface StoredDecision {
   reason: string | null;
   source_quote: string;
   status: string;
+  superseded_by: number | null;
   confirmed_at: string;
 }
 
@@ -49,7 +50,7 @@ export function listPendingCandidates(projectId: number): PendingCandidate[] {
 export function listDecisions(projectId: number): StoredDecision[] {
   return getDb()
     .prepare(
-      `SELECT id, decision, reason, source_quote, status, confirmed_at
+      `SELECT id, decision, reason, source_quote, status, superseded_by, confirmed_at
          FROM decisions WHERE project_id = ? ORDER BY id DESC`
     )
     .all(projectId) as StoredDecision[];

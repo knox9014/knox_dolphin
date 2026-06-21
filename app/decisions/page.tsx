@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ensureDefaultProject, listDecisions } from "@/lib/db/read-repo";
+import { SupersedeControl } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,10 @@ export const dynamic = "force-dynamic";
 export default function DecisionsPage() {
   const projectId = ensureDefaultProject();
   const decisions = listDecisions(projectId);
+  // A decision can only be superseded by another *confirmed* one.
+  const replacements = decisions
+    .filter((d) => d.status === "confirmed")
+    .map((d) => ({ id: d.id, decision: d.decision }));
 
   return (
     <main style={{ maxWidth: 760 }}>
@@ -38,6 +43,13 @@ export default function DecisionsPage() {
                 출처: <span style={{ fontStyle: "italic" }}>&ldquo;{d.source_quote}&rdquo;</span>
               </p>
               <p style={{ ...meta, color: "#6e7681", fontSize: 12 }}>확정: {d.confirmed_at}</p>
+              {d.status === "superseded" && d.superseded_by != null ? (
+                <p style={{ ...meta, color: "#d29922", fontSize: 13 }}>
+                  → #{d.superseded_by} 결정으로 대체됨 (기록은 보존)
+                </p>
+              ) : (
+                <SupersedeControl oldId={d.id} options={replacements.filter((r) => r.id !== d.id)} />
+              )}
             </li>
           ))}
         </ul>
