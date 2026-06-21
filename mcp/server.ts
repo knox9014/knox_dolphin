@@ -2,10 +2,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-import { listProjects, listDecisions } from "../lib/db/read-repo.ts";
+import { listProjects, listDecisions, listPendingCandidates } from "../lib/db/read-repo.ts";
 import { keywordRetriever } from "../core/recall/keyword-retriever.ts";
 import { isVerbatimQuote } from "../core/trust/source-quote.ts";
 import { saveCandidates } from "../lib/db/candidates-repo.ts";
+import { confirmCandidate, rejectCandidate } from "../core/confirmation/confirm.ts";
 
 // Knox_Dolphin MCP server — exposes a project's CONFIRMED decisions to Claude as
 // tools. It returns only stored records (with source quotes); it never invents.
@@ -133,6 +134,67 @@ server.registerTool(
       },
     ]);
     return text({ ok: true, queued: saved, note: "added to the review queue; a human must approve it before it becomes a stored decision" });
+  }
+);
+
+server.registerTool(
+  "knox_list_pending",
+  {
+    title: "List candidates awaiting review",
+    description:
+      "List the candidates in the review queue (not yet approved) for a project. " +
+      "Use this to show the user what is waiting, then ask whether to approve each one.",
+    inputSchema: {
+      project: z.string().optional().describe("Project name or id (defaults to KNOX_PROJECT env)"),
+    },
+  },
+  async ({ project }) => {
+    const pid = resolveProjectId(project);
+    if (pid === null) return text({ error: `project not resolved (pass project, or set KNOX_PROJECT): ${project ?? ""}` });
+    return text({ pending: listPendingCandidates(pid) });
+  }
+);
+
+server.registerTool(
+  "knox_confirm_candidate",
+  {
+    title: "Approve a candidate into the decision memory",
+    description:
+      "Promote a reviewed candidate into the project's stored decisions. This is a " +
+      "WRITE to the trusted memory. PROTOCOL: only call this AFTER you have shown the " +
+      "candidate's full content to the human and they have EXPLICITLY approved it in " +
+      "this conversation. Never approve on your own initiative, in bulk, or by " +
+      "inferring consent. The human's approval is the gate — do not bypass it.",
+    inputSchema: {
+      candidateId: z.number().int().describe("The candidate id to approve (from knox_list_pending)"),
+    },
+  },
+  async ({ candidateId }) => {
+    try {
+      const { decisionId } = confirmCandidate(candidateId);
+      return text({ ok: true, decisionId, note: "promoted to stored decisions" });
+    } catch (e) {
+      return text({ error: (e as Error).message });
+    }
+  }
+);
+
+server.registerTool(
+  "knox_reject_candidate",
+  {
+    title: "Reject a candidate",
+    description: "Mark a candidate as reviewed without storing it. Call after the human declines it.",
+    inputSchema: {
+      candidateId: z.number().int().describe("The candidate id to reject"),
+    },
+  },
+  async ({ candidateId }) => {
+    try {
+      rejectCandidate(candidateId);
+      return text({ ok: true, note: "rejected; nothing written to decisions" });
+    } catch (e) {
+      return text({ error: (e as Error).message });
+    }
   }
 );
 
