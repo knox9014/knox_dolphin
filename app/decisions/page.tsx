@@ -1,12 +1,13 @@
-import { ensureDefaultProject, listDecisions } from "@/lib/db/read-repo";
+import { listDecisions } from "@/lib/db/read-repo";
+import { getActiveProjectId } from "@/lib/active-project";
 import { Nav } from "../components/Nav";
 import { SupersedeControl } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 // The sanctuary, read-only. Every row here was human-approved and carries its source_quote.
-export default function DecisionsPage() {
-  const projectId = ensureDefaultProject();
+export default async function DecisionsPage() {
+  const projectId = await getActiveProjectId();
   const decisions = listDecisions(projectId);
   const replacements = decisions
     .filter((d) => d.status === "confirmed")

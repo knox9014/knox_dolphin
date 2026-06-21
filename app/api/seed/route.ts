@@ -4,7 +4,7 @@ import { extract } from "@/core/extractor/extract";
 import { mockProvider } from "@/core/extractor/mock-provider";
 import type { RawCandidate } from "@/core/extractor/provider";
 import { saveCandidates } from "@/lib/db/candidates-repo";
-import { ensureDefaultProject } from "@/lib/db/read-repo";
+import { getActiveProjectId } from "@/lib/active-project";
 
 export const runtime = "nodejs";
 
@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 // review — without any API key. Includes a fabricated quote to prove the guard
 // drops it (it will NOT appear in the queue).
 export async function POST() {
-  const projectId = ensureDefaultProject();
+  const projectId = await getActiveProjectId();
 
   const log: ParsedLog = {
     sessionId: "demo-session",

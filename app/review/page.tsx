@@ -1,4 +1,5 @@
-import { ensureDefaultProject, listPendingCandidates } from "@/lib/db/read-repo";
+import { listPendingCandidates } from "@/lib/db/read-repo";
+import { getActiveProjectId } from "@/lib/active-project";
 import { Nav } from "../components/Nav";
 import { CandidateActions, SeedButton } from "./actions";
 
@@ -6,8 +7,8 @@ export const dynamic = "force-dynamic"; // always read fresh from the DB
 
 // Review queue = the confirmation gate's UI. Pending candidates wait here until a
 // human approves (→ decisions) or rejects. The only path into the sanctuary.
-export default function ReviewPage() {
-  const projectId = ensureDefaultProject();
+export default async function ReviewPage() {
+  const projectId = await getActiveProjectId();
   const pending = listPendingCandidates(projectId);
 
   return (

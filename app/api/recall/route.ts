@@ -3,7 +3,7 @@ import { recall } from "@/core/recall/recall";
 import { keywordRetriever } from "@/core/recall/keyword-retriever";
 import { mockAnswerer } from "@/core/recall/mock-answerer";
 import { anthropicAnswerer } from "@/core/recall/anthropic-answerer";
-import { ensureDefaultProject } from "@/lib/db/read-repo";
+import { getActiveProjectId } from "@/lib/active-project";
 
 export const runtime = "nodejs";
 
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const answerer = apiKey ? anthropicAnswerer(apiKey) : mockAnswerer;
 
-  const projectId = ensureDefaultProject();
+  const projectId = await getActiveProjectId();
   const res = await recall(projectId, question, keywordRetriever, answerer);
   return NextResponse.json({
     answer: res.answer,

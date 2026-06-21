@@ -1,12 +1,13 @@
-import { ensureDefaultProject, listAllCandidates } from "@/lib/db/read-repo";
+import { listAllCandidates } from "@/lib/db/read-repo";
+import { getActiveProjectId } from "@/lib/active-project";
 import { Nav } from "../components/Nav";
 
 export const dynamic = "force-dynamic";
 
 // The full extraction log: every candidate ever produced, in any review state.
 // Fabricated quotes never reach here — the substring guard drops them before insert.
-export default function CandidatesPage() {
-  const projectId = ensureDefaultProject();
+export default async function CandidatesPage() {
+  const projectId = await getActiveProjectId();
   const candidates = listAllCandidates(projectId);
 
   return (

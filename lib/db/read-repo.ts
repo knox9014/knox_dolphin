@@ -35,6 +35,30 @@ export function ensureDefaultProject(): number {
   return Number(info.lastInsertRowid);
 }
 
+export interface Project {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+export function listProjects(): Project[] {
+  return getDb()
+    .prepare("SELECT id, name, created_at FROM projects ORDER BY id")
+    .all() as Project[];
+}
+
+export function projectExists(id: number): boolean {
+  return !!getDb().prepare("SELECT 1 FROM projects WHERE id = ?").get(id);
+}
+
+/** Create a project; returns its id. Name is trimmed and required. */
+export function createProject(name: string): number {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("project name required");
+  const info = getDb().prepare("INSERT INTO projects(name) VALUES (?)").run(trimmed);
+  return Number(info.lastInsertRowid);
+}
+
 export function listPendingCandidates(projectId: number): PendingCandidate[] {
   return getDb()
     .prepare(

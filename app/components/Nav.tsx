@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProjectSwitcher } from "./ProjectSwitcher";
 
 const LINKS = [
   { href: "/", label: "홈" },
@@ -12,12 +13,15 @@ const LINKS = [
 // Shared top navigation. `active` highlights the current page.
 export function Nav({ active }: { active: string }) {
   return (
-    <nav className="nav">
-      {LINKS.map((l) => (
-        <Link key={l.href} href={l.href} className={l.href === active ? "active" : ""}>
-          {l.label}
-        </Link>
-      ))}
-    </nav>
+    <div style={{ marginBottom: "1.75rem" }}>
+      <nav className="nav" style={{ marginBottom: 12 }}>
+        {LINKS.map((l) => (
+          <Link key={l.href} href={l.href} className={l.href === active ? "active" : ""}>
+            {l.label}
+          </Link>
+        ))}
+      </nav>
+      <ProjectSwitcher />
+    </div>
   );
 }

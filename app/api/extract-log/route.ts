@@ -3,7 +3,7 @@ import { parseLog } from "@/lib/claude-code-logs/parse";
 import { extract } from "@/core/extractor/extract";
 import { heuristicProvider } from "@/core/extractor/heuristic-provider";
 import { saveCandidates } from "@/lib/db/candidates-repo";
-import { ensureDefaultProject } from "@/lib/db/read-repo";
+import { getActiveProjectId } from "@/lib/active-project";
 import { listLogFiles as discover } from "@/lib/claude-code-logs/list";
 
 export const runtime = "nodejs";
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const log = parseLog(path);
   const { kept, discarded } = await extract(log, heuristicProvider);
 
-  const projectId = ensureDefaultProject();
+  const projectId = await getActiveProjectId();
   const saved = saveCandidates(projectId, log.sessionId, kept);
 
   return NextResponse.json({
