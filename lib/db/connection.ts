@@ -18,6 +18,8 @@ export function getDb(): DatabaseSync {
   db = new DatabaseSync(DB_PATH);
   // WAL: safer concurrent reads while a write is in flight. Cheap, no downside locally.
   db.exec("PRAGMA journal_mode = WAL;");
+  // Enforce REFERENCES (project_id, superseded_by) — off by default in SQLite.
+  db.exec("PRAGMA foreign_keys = ON;");
   return db;
 }
 
