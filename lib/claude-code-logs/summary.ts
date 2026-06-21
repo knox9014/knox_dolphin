@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { basename } from "node:path";
 
 // A human-friendly summary of one .claude log, so the UI can show "what was this
@@ -27,7 +27,24 @@ function textOf(content: unknown): string {
   return "";
 }
 
+// Parsing a log is expensive (files run to several MB), and the log list is
+// rebuilt on every /logs load. Cache the summary by path + mtime + size so an
+// unchanged file is parsed once; appended/edited files are re-parsed automatically.
+const cache = new Map<string, { mtimeMs: number; size: number; summary: LogSummary }>();
+
 export function summarizeLog(path: string): LogSummary {
+  let mtimeMs = 0;
+  let size = 0;
+  try {
+    const st = statSync(path);
+    mtimeMs = st.mtimeMs;
+    size = st.size;
+    const hit = cache.get(path);
+    if (hit && hit.mtimeMs === mtimeMs && hit.size === size) return hit.summary;
+  } catch {
+    return { title: null, cwd: null, cwdName: null, developerMsgs: 0, assistantMsgs: 0, firstUserPreview: null };
+  }
+
   let raw = "";
   try {
     raw = readFileSync(path, "utf8");
@@ -65,7 +82,7 @@ export function summarizeLog(path: string): LogSummary {
     }
   }
 
-  return {
+  const summary: LogSummary = {
     title,
     cwd,
     cwdName: cwd ? basename(cwd) : null,
@@ -73,4 +90,6 @@ export function summarizeLog(path: string): LogSummary {
     assistantMsgs,
     firstUserPreview,
   };
+  cache.set(path, { mtimeMs, size, summary });
+  return summary;
 }
