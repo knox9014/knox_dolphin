@@ -1,11 +1,16 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, join } from "node:path";
+import { homedir } from "node:os";
 
 // Single SQLite file = the entire local memory store (local-first, see DECISIONS D6/D7).
 // One connection is reused across the process (singleton) to avoid file-lock churn.
+//
+// Default lives in the user's home (~/.knox-dolphin/knox.db) so the web app and the
+// MCP server/plugin — which run from different working directories — share one store.
+// Override with KNOX_DB_PATH.
 
-const DB_PATH = resolve(process.env.KNOX_DB_PATH ?? "./data/knox.db");
+const DB_PATH = resolve(process.env.KNOX_DB_PATH ?? join(homedir(), ".knox-dolphin", "knox.db"));
 
 let db: DatabaseSync | null = null;
 

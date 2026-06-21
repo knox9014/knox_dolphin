@@ -84,7 +84,23 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ---
 
-## Claude와 연결 (MCP)
+## Claude 플러그인으로 설치 (권장)
+
+Knox_Dolphin은 Claude Code 플러그인으로 설치할 수 있습니다. 설치하면 어느 repo에서든 도구가 바로 잡히고, **작업 중인 폴더 이름으로 프로젝트를 자동 인식**합니다.
+
+```
+/plugin marketplace add knox9014/knox_dolphin
+/plugin install knox-dolphin
+```
+
+- MCP 서버는 **번들된 단일 파일**(`dist/mcp-server.mjs`)이라 별도 `npm install`이 필요 없습니다. **Node 22+** 필요.
+- 데이터는 `~/.knox-dolphin/knox.db` 한 곳에 모입니다 — 웹앱과 플러그인이 같은 기억을 공유합니다.
+- 슬래시 커맨드: `/knox-recall <질문>`, `/knox-save <결정>`, `/knox-review`.
+- 프로젝트를 폴더명과 다르게 쓰려면 도구에 `project`를 명시하거나 환경변수 `KNOX_PROJECT`로 고정.
+
+> 직접 손으로 MCP를 붙이려면(플러그인 없이) 아래 방식도 가능합니다.
+
+## Claude와 연결 (MCP, 수동)
 
 Knox_Dolphin은 **MCP 서버**로 동작해, Claude(Claude Code/Desktop)가 작업 중에 **그 프로젝트의 확정 결정을 직접 검색**할 수 있습니다. Claude는 전체 대화를 다시 읽는 대신, 검증된 결정 알맹이만 읽고 이어 작업합니다.
 

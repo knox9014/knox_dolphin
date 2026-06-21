@@ -1,0 +1,11 @@
+{
+  "name": "knox-dolphin",
+  "owner": { "name": "knox9014", "url": "https://github.com/knox9014" },
+  "plugins": [
+    {
+      "name": "knox-dolphin",
+      "source": "./",
+      "description": "Local-first project memory: recall why past decisions were made, propose new ones to the review queue."
+    }
+  ]
+}

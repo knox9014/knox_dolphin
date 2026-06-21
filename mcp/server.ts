@@ -2,7 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-import { listProjects, listDecisions, listPendingCandidates } from "../lib/db/read-repo.ts";
+import { basename } from "node:path";
+import { listProjects, listDecisions, listPendingCandidates, createProject } from "../lib/db/read-repo.ts";
 import { keywordRetriever } from "../core/recall/keyword-retriever.ts";
 import { isVerbatimQuote } from "../core/trust/source-quote.ts";
 import { saveCandidates } from "../lib/db/candidates-repo.ts";
@@ -13,11 +14,16 @@ import { confirmCandidate, rejectCandidate } from "../core/confirmation/confirm.
 // This is the mission in action: Claude reads the distilled, trusted memory
 // instead of re-reading whole transcripts. Read-only; shares the local SQLite DB.
 
-// Resolve a project. Precedence: explicit arg → KNOX_PROJECT env (so a target
-// repo's .mcp.json can pin its project) → the only project if there's just one.
+// The working folder name — used to auto-detect the project when nothing is pinned.
+function cwdProjectName(): string {
+  return basename(process.cwd());
+}
+
+// Resolve a project. Precedence: explicit arg → KNOX_PROJECT env → the current
+// working folder's name (zero-config: the repo Claude is in) → the only project.
 function resolveProjectId(ref?: string): number | null {
   const projects = listProjects();
-  const want = ref ?? process.env.KNOX_PROJECT ?? "";
+  const want = ref ?? process.env.KNOX_PROJECT ?? cwdProjectName();
   if (want) {
     const asNum = Number(want);
     if (Number.isInteger(asNum)) {
@@ -26,9 +32,17 @@ function resolveProjectId(ref?: string): number | null {
     }
     const byName = projects.find((p) => p.name === want);
     if (byName) return byName.id;
-    return null;
   }
   return projects.length === 1 ? projects[0].id : null;
+}
+
+// For writes (proposing a decision), resolve as above but CREATE the project from
+// the working-folder name if it doesn't exist yet — so a first decision in a new
+// repo lands somewhere sensible without manual setup.
+function resolveOrCreateProjectId(ref?: string): number {
+  const existing = resolveProjectId(ref);
+  if (existing !== null) return existing;
+  return createProject(ref ?? process.env.KNOX_PROJECT ?? cwdProjectName() ?? "default");
 }
 
 function text(obj: unknown) {
@@ -115,9 +129,8 @@ server.registerTool(
     },
   },
   async ({ project, decision, source_quote, conversation_excerpt, reason, alternatives, rejected_because, impact, speaker }) => {
-    const pid = resolveProjectId(project);
-    if (pid === null) return text({ error: `project not resolved (pass project, or set KNOX_PROJECT): ${project ?? ""}` });
     if (!decision?.trim()) return text({ error: "decision is required" });
+    const pid = resolveOrCreateProjectId(project);
     // Trust guard: the quote must actually appear in the evidence Claude provided.
     if (!isVerbatimQuote(source_quote, conversation_excerpt)) {
       return text({ rejected: true, reason: "source_quote is not a verbatim substring of conversation_excerpt" });

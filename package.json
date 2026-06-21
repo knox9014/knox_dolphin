@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "db:migrate": "node scripts/db-migrate.ts",
-    "mcp": "node mcp/server.ts"
+    "mcp": "node mcp/server.ts",
+    "build:mcp": "node scripts/build-mcp.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/node": "22.10.0",
     "@types/react": "19.0.0",
+    "esbuild": "^0.28.1",
     "typescript": "5.7.2"
   }
 }
