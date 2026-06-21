@@ -1,0 +1,13 @@
+{
+  "_comment": "Copy into a target repo as .mcp.json so Claude Code there can read that project's Knox_Dolphin memory. Use absolute paths. KNOX_PROJECT pins which Knox project this repo maps to; KNOX_DB_PATH is only needed if you used a non-default DB file.",
+  "mcpServers": {
+    "knox-dolphin": {
+      "command": "node",
+      "args": ["C:/Users/seong/Desktop/knox-dolphin/mcp/server.ts"],
+      "env": {
+        "KNOX_PROJECT": "default",
+        "KNOX_DB_PATH": "C:/Users/seong/Desktop/knox-dolphin/data/knox.db"
+      }
+    }
+  }
+}

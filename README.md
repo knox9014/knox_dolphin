@@ -78,16 +78,37 @@ ANTHROPIC_API_KEY=sk-ant-...
 ## 다른 사람 / 다른 프로젝트에서 쓰기
 
 - **다른 사람:** 그대로 clone해서 위 단계를 따르면 됩니다. 각자 기기의 `~/.claude` 로그를 읽고, 각자의 로컬 `data/knox.db`에 저장합니다(gitignore라 안 섞임). 내 기기, 내 데이터.
-- **여러 프로젝트(같은 사람):** 현재는 단일 메모리 풀입니다. 프로젝트별로 완전히 분리하려면 다른 DB 파일을 쓰면 됩니다:
+- **여러 프로젝트(같은 사람):** 상단 네비의 **프로젝트 드롭다운**에서 골라 전환하거나 **"+ 새 프로젝트"**로 만들면, 결정·후보·검토·검색·추출이 모두 선택한 프로젝트로 분리됩니다. 한 DB 안에서 프로젝트별로 기억이 격리됩니다.
 
-  ```bash
-  KNOX_DB_PATH=./data/projectB.db npm run db:migrate
-  KNOX_DB_PATH=./data/projectB.db npm run dev
-  ```
-
-  > UI 안에서 프로젝트를 골라 전환하는 기능은 로드맵입니다(스키마의 `projects` 테이블은 이미 준비됨).
+  > 완전히 별도의 DB 파일로 나누고 싶다면 `KNOX_DB_PATH=./data/other.db npm run dev`로 실행할 수도 있습니다(선택).
 
 ---
+
+## Claude와 연결 (MCP)
+
+Knox_Dolphin은 **MCP 서버**로 동작해, Claude(Claude Code/Desktop)가 작업 중에 **그 프로젝트의 확정 결정을 직접 검색**할 수 있습니다. Claude는 전체 대화를 다시 읽는 대신, 검증된 결정 알맹이만 읽고 이어 작업합니다.
+
+노출되는 도구:
+
+- `knox_list_projects` — 사용 가능한 프로젝트 목록
+- `knox_recall(project?, question)` — 그 프로젝트 결정에서 검색해 **출처 포함 레코드**를 반환 (없으면 "기록 없음" 신호 → Claude가 지어내지 않음)
+- `knox_list_decisions(project?)` — 확정 결정 전체
+
+**각 프로젝트에 연동하기:** 대상 repo(예: 내 앱 코드)의 루트에 `.mcp.json`을 두고, 그 repo가 어느 Knox 프로젝트에 대응하는지 `KNOX_PROJECT`로 고정합니다. 그러면 그 repo에서 Claude는 자동으로 해당 프로젝트의 기억을 씁니다. 샘플: [mcp/example.mcp.json](mcp/example.mcp.json) (절대 경로로 수정해 복사).
+
+```json
+{
+  "mcpServers": {
+    "knox-dolphin": {
+      "command": "node",
+      "args": ["/절대경로/knox-dolphin/mcp/server.ts"],
+      "env": { "KNOX_PROJECT": "내-프로젝트-이름" }
+    }
+  }
+}
+```
+
+`project` 인자를 명시하면 그게 우선이고, 생략하면 `KNOX_PROJECT`(또는 프로젝트가 하나뿐이면 그것)를 씁니다. 서버는 읽기 전용이며 웹앱과 같은 로컬 DB를 공유합니다. 로컬에서 직접 띄워보려면 `npm run mcp`.
 
 ## 폴더 구조
 
@@ -108,7 +129,6 @@ docs/       DECISIONS.md, ARCHITECTURE.md, PRD.md, PROJECT_CONTEXT.md
 
 - 키 없는 추출은 휴리스틱이라 노이즈(false positive)가 섞입니다 — 사람이 검토 큐에서 거릅니다.
 - 벡터 검색은 아직 키워드 검색입니다(회상 단계에서 추가 예정, D9).
-- UI 안 멀티 프로젝트 전환은 미구현(위 우회법 참고).
 
 ## 기술 스택
 
