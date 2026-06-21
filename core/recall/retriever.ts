@@ -12,6 +12,7 @@ export interface DecisionRecord {
   source_quote: string;
   session_id: string | null;
   status: string;
+  superseded_by: number | null;
   confirmed_at: string;
   score: number; // higher = more relevant
 }

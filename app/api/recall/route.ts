@@ -24,6 +24,12 @@ export async function POST(req: Request) {
     answer: res.answer,
     grounded: res.grounded,
     usedModel: res.grounded ? Boolean(apiKey) : false,
-    records: res.records.map((r) => ({ id: r.id, decision: r.decision, source_quote: r.source_quote })),
+    records: res.records.map((r) => ({
+      id: r.id,
+      decision: r.decision,
+      source_quote: r.source_quote,
+      status: r.status,
+      superseded_by: r.superseded_by,
+    })),
   });
 }

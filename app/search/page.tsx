@@ -6,7 +6,13 @@ import { useState } from "react";
 interface RecallResponse {
   answer: string;
   grounded: boolean;
-  records: { id: number; decision: string; source_quote: string }[];
+  records: {
+    id: number;
+    decision: string;
+    source_quote: string;
+    status: string;
+    superseded_by: number | null;
+  }[];
 }
 
 // Recall UI. Ask "why did we…" and get an answer grounded ONLY in stored decisions,
@@ -64,6 +70,18 @@ export default function SearchPage() {
             <>
               <strong>근거 있는 답변</strong>
               <pre style={{ whiteSpace: "pre-wrap", margin: "8px 0 0", fontFamily: "inherit" }}>{res.answer}</pre>
+              <div style={{ marginTop: 14, borderTop: "1px solid #21262d", paddingTop: 10 }}>
+                <span style={{ fontSize: 12, color: "#7d8590" }}>근거 레코드</span>
+                {res.records.map((r) => (
+                  <div key={r.id} style={{ marginTop: 6, fontSize: 13 }}>
+                    <span style={badge(r.status)}>{r.status === "superseded" ? "대체됨" : "확정"}</span>{" "}
+                    <strong>#{r.id}</strong> {r.decision}
+                    {r.status === "superseded" && r.superseded_by != null && (
+                      <span style={{ color: "#d29922" }}> → #{r.superseded_by}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </>
           ) : (
             <strong style={{ color: "#d29922" }}>기록 없음 — 모델을 호출하지 않았습니다.</strong>
@@ -72,4 +90,15 @@ export default function SearchPage() {
       )}
     </main>
   );
+}
+
+function badge(status: string): React.CSSProperties {
+  const superseded = status === "superseded";
+  return {
+    fontSize: 11,
+    padding: "1px 7px",
+    borderRadius: 10,
+    background: superseded ? "#d2992226" : "#2ea04326",
+    color: superseded ? "#d29922" : "#3fb950",
+  };
 }
