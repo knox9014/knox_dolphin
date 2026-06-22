@@ -165,3 +165,7 @@ docs/       DECISIONS.md, ARCHITECTURE.md, PRD.md, PROJECT_CONTEXT.md
 ## 기술 스택
 
 Next.js 16 · TypeScript · `node:sqlite` (로컬 우선, 로그인 없음)
+
+## 라이선스
+
+[PolyForm Noncommercial 1.0.0](LICENSE). **비상업적 용도(개인·취미·연구·교육·비영리)는 무료**로 사용·수정·배포할 수 있습니다. **상업적 이용은 허용되지 않으며**, 필요하면 저작권자(knox9014)에게 별도 문의해야 합니다. 어떤 경우에도 저작권 표시는 유지해야 합니다.

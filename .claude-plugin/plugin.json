@@ -2,10 +2,10 @@
   "name": "knox-dolphin",
   "displayName": "Knox_Dolphin — Project Memory",
   "description": "Read and write your project's confirmed decision memory. Recall why past decisions were made (grounded in stored records with source quotes) and propose new decisions to the review queue.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": { "name": "knox9014", "url": "https://github.com/knox9014" },
   "repository": "https://github.com/knox9014/knox_dolphin",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "keywords": ["memory", "decisions", "mcp", "knowledge"],
   "mcpServers": "./mcp-config.json"
 }
