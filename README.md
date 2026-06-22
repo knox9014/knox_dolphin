@@ -1,6 +1,16 @@
 # Knox_Dolphin
 
-**코드의 '왜'를 저장하는 로컬 우선 프로젝트 메모리.**
+**코드의 '왜'를 저장하는 로컬 우선 프로젝트 메모리.** — Claude Code 플러그인 / MCP 서버
+
+> **Claude Code 플러그인으로 1줄 설치 (터미널 CLI):**
+> ```
+> /plugin marketplace add knox9014/knox_dolphin
+> /plugin install knox-dolphin
+> ```
+> 데스크톱 앱이라 `/plugin`이 없으면 → 아래 [Claude와 연결 (MCP, 수동)](#claude와-연결-mcp-수동) 참고.
+
+---
+
 
 GitHub은 코드를 저장합니다. Knox_Dolphin은 그 코드가 왜 그렇게 됐는지 — 어떤 결정을, 왜, 무엇과 비교해서 내렸는지 — 를 저장합니다. 데이터 원천은 커밋 diff가 아니라 **개발자와 AI 코딩 어시스턴트의 대화 로그**입니다. 결정의 '왜'는 diff에 없고 대화에 명시돼 있기 때문입니다.
 
