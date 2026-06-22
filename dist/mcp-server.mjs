@@ -30998,21 +30998,69 @@ function listDecisions(projectId) {
   ).all(projectId);
 }
 
-// core/recall/keyword-retriever.ts
-function tokenize(s) {
-  return s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 2);
+// core/recall/tokenize.ts
+var PARTICLES = [
+  "\uC73C\uB85C\uC368",
+  "\uC73C\uB85C\uC11C",
+  "\uC774\uB77C\uB294",
+  "\uC73C\uB85C",
+  "\uC5D0\uC11C",
+  "\uC5D0\uAC8C",
+  "\uAE4C\uC9C0",
+  "\uBD80\uD130",
+  "\uC774\uB77C",
+  "\uB77C\uACE0",
+  "\uB77C\uB294",
+  "\uC740",
+  "\uB294",
+  "\uC774",
+  "\uAC00",
+  "\uC744",
+  "\uB97C",
+  "\uC640",
+  "\uACFC",
+  "\uB85C",
+  "\uC5D0",
+  "\uC758",
+  "\uB3C4",
+  "\uB9CC",
+  "\uAED8"
+];
+var HANGUL = /[가-힣]/;
+function stripParticle(token) {
+  if (!HANGUL.test(token)) return token;
+  for (const p of PARTICLES) {
+    if (token.length > p.length + 1 && token.endsWith(p)) {
+      return token.slice(0, -p.length);
+    }
+  }
+  return token;
 }
+function tokenize(s) {
+  const spaced = s.toLowerCase().replace(/([a-z0-9])([가-힣])/g, "$1 $2").replace(/([가-힣])([a-z0-9])/g, "$1 $2");
+  const out = /* @__PURE__ */ new Set();
+  for (const raw of spaced.split(/[^\p{L}\p{N}]+/u)) {
+    if (raw.length < 2) continue;
+    const t = stripParticle(raw);
+    if (t.length >= 2) out.add(t);
+  }
+  return [...out];
+}
+
+// core/recall/keyword-retriever.ts
 var keywordRetriever = {
   retrieve(projectId, question, topK) {
-    const terms = [...new Set(tokenize(question))];
+    const terms = tokenize(question);
     if (terms.length === 0) return [];
     const cols = `id, decision, reason, alternatives, rejected_because, impact,
                   source_quote, session_id, status, superseded_by, confirmed_at`;
     const db2 = getDb();
     const rows = db2.prepare(`SELECT ${cols} FROM decisions WHERE project_id = ?`).all(projectId);
     const scored = rows.map((r) => {
-      const hay = [r.decision, r.reason, r.alternatives, r.rejected_because, r.impact, r.source_quote].filter(Boolean).join(" ").toLowerCase();
-      const score = terms.reduce((n, t) => hay.includes(t) ? n + 1 : n, 0);
+      const text2 = [r.decision, r.reason, r.alternatives, r.rejected_because, r.impact, r.source_quote].filter(Boolean).join(" ");
+      const hayTokens = new Set(tokenize(text2));
+      const hay = text2.toLowerCase();
+      const score = terms.reduce((n, t) => hayTokens.has(t) || hay.includes(t) ? n + 1 : n, 0);
       return { ...r, score };
     }).filter((r) => r.score > 0).sort((a, b) => b.score - a.score).slice(0, topK);
     const present = new Set(scored.map((r) => r.id));
