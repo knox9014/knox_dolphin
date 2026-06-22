@@ -36,13 +36,9 @@ function resolveProjectId(ref?: string): number | null {
   return projects.length === 1 ? projects[0].id : null;
 }
 
-// For writes (proposing a decision), resolve as above but CREATE the project from
-// the working-folder name if it doesn't exist yet — so a first decision in a new
-// repo lands somewhere sensible without manual setup.
-function resolveOrCreateProjectId(ref?: string): number {
-  const existing = resolveProjectId(ref);
-  if (existing !== null) return existing;
-  return createProject(ref ?? process.env.KNOX_PROJECT ?? cwdProjectName() ?? "default");
+// Explicitly create a project by name (used only when the user confirms it).
+function createNamedProject(name: string): number {
+  return createProject(name);
 }
 
 function text(obj: unknown) {
@@ -110,14 +106,16 @@ server.registerTool(
     title: "Propose a decision (to the review queue)",
     description:
       "Capture a decision made during this conversation. It does NOT become a stored " +
-      "decision — it goes to the human review queue (candidates) for approval. You MUST " +
-      "supply `source_quote` (the exact words from the conversation that state the " +
-      "decision) and `conversation_excerpt` (the surrounding text it came from). The " +
+      "decision — it goes to the human review queue (candidates) for approval. ALWAYS " +
+      "pass an explicit `project`; if it doesn't exist the call is refused and returns " +
+      "the available projects (ask the user which one, or pass create_project:true only " +
+      "after they confirm a new project). You MUST supply `source_quote` (exact words " +
+      "from the conversation) and `conversation_excerpt` (the surrounding text). The " +
       "server verifies the quote is a verbatim substring of the excerpt and rejects it " +
       "otherwise. Do not invent reasoning: leave reason/alternatives/etc. null if not " +
       "explicitly stated.",
     inputSchema: {
-      project: z.string().optional().describe("Project name or id (defaults to KNOX_PROJECT env)"),
+      project: z.string().describe("Project name or id — required; the decision is scoped to it"),
       decision: z.string().describe("Short statement of the decision"),
       source_quote: z.string().describe("Exact verbatim words from the conversation"),
       conversation_excerpt: z.string().describe("The surrounding conversation text the quote came from"),
@@ -126,11 +124,25 @@ server.registerTool(
       rejected_because: z.string().nullable().optional(),
       impact: z.string().nullable().optional(),
       speaker: z.enum(["developer", "assistant"]).optional(),
+      create_project: z.boolean().optional().describe("Set true ONLY after the user confirms creating this project"),
     },
   },
-  async ({ project, decision, source_quote, conversation_excerpt, reason, alternatives, rejected_because, impact, speaker }) => {
+  async ({ project, decision, source_quote, conversation_excerpt, reason, alternatives, rejected_because, impact, speaker, create_project }) => {
     if (!decision?.trim()) return text({ error: "decision is required" });
-    const pid = resolveOrCreateProjectId(project);
+    if (!project?.trim()) {
+      return text({ error: "project is required", available: listProjects().map((p) => p.name) });
+    }
+    // Never silently auto-create a project — the user must confirm via create_project.
+    let pid = resolveProjectId(project);
+    if (pid === null) {
+      if (!create_project) {
+        return text({
+          error: `project "${project}" not found — confirm with the user, then retry with create_project:true to create it`,
+          available: listProjects().map((p) => p.name),
+        });
+      }
+      pid = createNamedProject(project);
+    }
     // Trust guard: the quote must actually appear in the evidence Claude provided.
     if (!isVerbatimQuote(source_quote, conversation_excerpt)) {
       return text({ rejected: true, reason: "source_quote is not a verbatim substring of conversation_excerpt" });

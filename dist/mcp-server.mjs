@@ -31183,10 +31183,8 @@ function resolveProjectId(ref) {
   }
   return projects.length === 1 ? projects[0].id : null;
 }
-function resolveOrCreateProjectId(ref) {
-  const existing = resolveProjectId(ref);
-  if (existing !== null) return existing;
-  return createProject(ref ?? process.env.KNOX_PROJECT ?? cwdProjectName() ?? "default");
+function createNamedProject(name) {
+  return createProject(name);
 }
 function text(obj) {
   return { content: [{ type: "text", text: JSON.stringify(obj, null, 2) }] };
@@ -31242,9 +31240,9 @@ server.registerTool(
   "knox_propose_decision",
   {
     title: "Propose a decision (to the review queue)",
-    description: "Capture a decision made during this conversation. It does NOT become a stored decision \u2014 it goes to the human review queue (candidates) for approval. You MUST supply `source_quote` (the exact words from the conversation that state the decision) and `conversation_excerpt` (the surrounding text it came from). The server verifies the quote is a verbatim substring of the excerpt and rejects it otherwise. Do not invent reasoning: leave reason/alternatives/etc. null if not explicitly stated.",
+    description: "Capture a decision made during this conversation. It does NOT become a stored decision \u2014 it goes to the human review queue (candidates) for approval. ALWAYS pass an explicit `project`; if it doesn't exist the call is refused and returns the available projects (ask the user which one, or pass create_project:true only after they confirm a new project). You MUST supply `source_quote` (exact words from the conversation) and `conversation_excerpt` (the surrounding text). The server verifies the quote is a verbatim substring of the excerpt and rejects it otherwise. Do not invent reasoning: leave reason/alternatives/etc. null if not explicitly stated.",
     inputSchema: {
-      project: external_exports.string().optional().describe("Project name or id (defaults to KNOX_PROJECT env)"),
+      project: external_exports.string().describe("Project name or id \u2014 required; the decision is scoped to it"),
       decision: external_exports.string().describe("Short statement of the decision"),
       source_quote: external_exports.string().describe("Exact verbatim words from the conversation"),
       conversation_excerpt: external_exports.string().describe("The surrounding conversation text the quote came from"),
@@ -31252,12 +31250,25 @@ server.registerTool(
       alternatives: external_exports.string().nullable().optional(),
       rejected_because: external_exports.string().nullable().optional(),
       impact: external_exports.string().nullable().optional(),
-      speaker: external_exports.enum(["developer", "assistant"]).optional()
+      speaker: external_exports.enum(["developer", "assistant"]).optional(),
+      create_project: external_exports.boolean().optional().describe("Set true ONLY after the user confirms creating this project")
     }
   },
-  async ({ project, decision, source_quote, conversation_excerpt, reason, alternatives, rejected_because, impact, speaker }) => {
+  async ({ project, decision, source_quote, conversation_excerpt, reason, alternatives, rejected_because, impact, speaker, create_project }) => {
     if (!decision?.trim()) return text({ error: "decision is required" });
-    const pid = resolveOrCreateProjectId(project);
+    if (!project?.trim()) {
+      return text({ error: "project is required", available: listProjects().map((p) => p.name) });
+    }
+    let pid = resolveProjectId(project);
+    if (pid === null) {
+      if (!create_project) {
+        return text({
+          error: `project "${project}" not found \u2014 confirm with the user, then retry with create_project:true to create it`,
+          available: listProjects().map((p) => p.name)
+        });
+      }
+      pid = createNamedProject(project);
+    }
     if (!isVerbatimQuote(source_quote, conversation_excerpt)) {
       return text({ rejected: true, reason: "source_quote is not a verbatim substring of conversation_excerpt" });
     }
